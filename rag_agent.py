@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict, Any
 
-from langchain_openai import ChatOpenAI
+from langchain_ollama import Ollama
 from langchain.tools import tool
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import create_react_agent
@@ -14,7 +14,6 @@ load_dotenv()
 
 # Global environment variables
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ---------- Tools ----------
 @tool
@@ -46,10 +45,10 @@ class RAGAgent:
         global VECTORSTORE
         VECTORSTORE = vectorstore
 
-        self.llm = ChatOpenAI(
-            model="gpt-4o-mini",
+        # Use Ollama LLM for generation
+        self.llm = Ollama(
+            model="llama3",
             temperature=0,
-            api_key=OPENAI_API_KEY,
         )
 
         # Build the graph
