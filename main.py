@@ -34,7 +34,13 @@ def main():
             answer = str(result)
             source = "unknown"
 
-        console.print(Panel(f"[bold]Answer:[/bold]\n{answer}\n\n[italic]Source: {source}[/italic]", title="Response"))
+        console.print(
+            Panel(
+                f"[bold]Answer:[/bold]\n{answer}\n\n[italic]Source: {source}[/italic]",
+                title="Response",
+            )
+        )
+
 
 if __name__ == "__main__":
     main()

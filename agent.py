@@ -1,11 +1,9 @@
 import os
 from typing import Dict, Any
 
-from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt.tool_executor import ToolExecutorNode
 from langgraph.prebuilt.router import RouterNode
-from langgraph.prebuilt.tools import create_tool_node
 
 from tools import search_local_kb, web_search
 
@@ -18,6 +16,24 @@ def _router(state: Dict[str, Any]) -> str:
     if any(word in query for word in ["news", "current", "today", "recent", "latest"]):
         return "web"
     return "local"
+
+
+def format_node(state: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Format the tool output into a final answer and source label.
+    """
+    if "search_local_kb" in state:
+        results = state["search_local_kb"]
+        source = "chromadb"
+    elif "web_search" in state:
+        results = state["web_search"]
+        source = "tavily"
+    else:
+        return {"output": "No result found.", "source": "unknown"}
+
+    # Concatenate the content snippets into a single answer
+    answer = "\n\n".join([r["content"] for r in results])
+    return {"output": answer, "source": source}
 
 
 def create_agent() -> StateGraph:
@@ -38,17 +54,22 @@ def create_agent() -> StateGraph:
     # Router node
     router_node = RouterNode(_router)
 
+    # Formatter node
+    formatter_node = format_node
+
     # Build graph
     graph = StateGraph()
     graph.add_node("router", router_node)
     graph.add_node("local", local_tool)
     graph.add_node("web", web_tool)
+    graph.add_node("formatter", formatter_node)
 
     # Define transitions
     graph.set_entry_point("router")
     graph.add_edge("router", "local")
     graph.add_edge("router", "web")
-    graph.add_edge("local", END)
-    graph.add_edge("web", END)
+    graph.add_edge("local", "formatter")
+    graph.add_edge("web", "formatter")
+    graph.add_edge("formatter", END)
 
     return graph.compile()
